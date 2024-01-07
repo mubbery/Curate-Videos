@@ -22,6 +22,73 @@
 #	All output is logged to a file as well as display on screen.
 
 
+
+# Current Version
+intVerion="2.9.6"
+
+# Version : 2.9.6
+# Date    : 01/10/2023
+# Author  : Andy Sibthorp
+# Release Notes:
+#   Moved to /usr/local/bin and move exlcude-strings to /usr/local/etc
+
+
+# Historic Change Log
+
+# Version : 2.9.5
+# Date    : 08/08/2023
+# Author  : Andy Sibthorp
+# Release Notes:
+#   Updated configuration for Arch Linux based server.
+
+# Version : 2.9.4
+# Date    : 19/03/2023
+# Author  : Andy Sibthorp
+# Release Notes:
+#   Now handles AVI files by moving only. Will skip mkvmerge.
+
+# Version : 2.9.3
+# Date    : 03/03/2022
+# Author  : Andy Sibthorp
+# Release Notes:
+#   Re-wrote the code that creates sub folders for show. Now uses regex instead of the crap thing I did before. What I wrote before was unreliable.
+
+# Version : 2.9.2
+# Date    : 18/01/2022
+# Author  : Andy Sibthorp
+# Release Notes:
+#   Bug fix for capitalisation of show name folders. Now name is set to lowercase before capitalising initials.
+
+# Version : 2.9.1
+# Date    : 01/12/2021
+# Author  : Andy Sibthorp
+# Release Notes:
+#   Fixed capitalisation so each word in $showName has an upper case letter.
+
+# Version : 2.9
+# Date    : 23/11/2021
+# Author  : Andy Sibthorp
+# Release Notes:
+#   sub-directory naming for shows now handles season numbers high than 09
+
+# Version : 2.8
+# Date    : 30/10/2021
+# Author  : Andy Sibthorp
+# Release Notes:
+#   Added step to use name sub-directories for shows. These will uise the show name taken from the episode filename.
+
+# Version : 2.7.1
+# Date    : 10/06/2021
+# Author  : Andy Sibthorp
+# Release Notes:
+#   Changed var name from intMinFileSizeToTriggerSubtitleRemovalInGB to intMinFileSizeToTriggerMkvmergeInGB
+
+# Version : 2.7
+# Date    : 26/02/2021
+# Author  : Andy Sibthorp
+# Release Notes:
+#   Added Setting for the error log file name and path.
+
 # Version : 2.6
 # Date    : 18/10/2020
 # Author  : Andy Sibthorp
@@ -115,7 +182,6 @@
 
 
 ### Static Definitions ################################################################################################
-intVerion="2.3"
 
 IFS=""
 
@@ -124,17 +190,23 @@ IFS=""
 	ApplyAutoModeSettings() {
 
 		# Two Target folders to split Films and Shows. If strTargetDir is set to none these 2 Target dir settings are ignored.
-		strTargetDirFilms="/mnt/pi-drive-01/Films"
-		strTargetDirShows="/mnt/pi-drive-01/TV-Shows"
+		strTargetDirFilms="/mnt/ssd-01/Media-Library/Films"
+		strTargetDirShows="/mnt/ssd-01/Media-Library/TV-Shows"
 
 		# Target directory path to move the source files into. Set to the word none if you want to use the Films / Shows settings above.
 		strTargetDir=none
 
+		# Target directory path to move the source files into. Set to the word none if you want to use the Films / Shows settings above.
+		strUseShowNameForShowSubdirectory=true
+
 		# Directory path for mkvmerge to output files to when it is removing subtitles.
-		strTargetDirMKVMergeTemp="/mnt/pi-drive-01/torrents/mkvmergetemp"
+		strTargetDirMKVMergeTemp="/mnt/ssd-01/Torrents/mkvmergetemp"
 
 		# Directory path where the source files are located (Can be the top of a structure to be recursed through).
-		strSourcePath="/mnt/pi-drive-01/torrents/complete"
+		strSourcePath="/mnt/ssd-01/Torrents/complete"
+
+		# Filename and path for the Error report log
+		strLogFileNameAndPath="/mnt/ssd-01/Torrents/curate-logs/errors.log"
 
 		# Skip files with the word "sample" in the filename
 		strSkipSampleFiles=true
@@ -143,13 +215,13 @@ IFS=""
 		intMinFileSizeToIgnoreInMB=15
 
 		# The minimum size of file to strip subtitles from. Only files bigger than this value will have their subtitles removed.
-		intMinFileSizeToTriggerSubtitleRemovalInGB=2
+		intMinFileSizeToTriggerMkvmergeInGB=3
 
-		# Directory path for the logm files
-		strLogFilesDir="/mnt/pi-drive-01/torrents/curate-videos-logs"
-		
+		# Directory path for the log files
+		strLogFilesDir="/mnt/ssd-01/Torrents/curate-logs/activity-logs"
+
 		# List of names to exclude from being processed by mkvmerge. They will still be moved into the correct folder.
-		strExcludesListFileNameAndPath="/mnt/pi-drive-01/torrents/curate-videos-exclude-strings.txt"
+		strExcludesListFileNameAndPath="/usr/local/etc/curate-videos-exclude-strings.cfg"
 
 		# Number of log files to keep
 		intNumberOfLogFilesToKeep=1800
@@ -218,7 +290,7 @@ IFS=""
 		intMinFileSizeToIgnoreInMB=0
 
 		# The minimum size of file to strip subtitles from. Only files bigger than this value will have their subtitles removed.
-		intMinFileSizeToTriggerSubtitleRemovalInGB=0
+		intMinFileSizeToTriggerMkvmergeInGB=0
 		
 		# No excludes by default in commandline mode.
 		strCheckForExcludes=false
@@ -236,7 +308,7 @@ IFS=""
 		intOneMegaByteInBytes="1048576"
 		intOneGigaByteInBytes="1073741824"
 		intFileSizeToIgnore=$(expr $intOneMegaByteInBytes \* $intMinFileSizeToIgnoreInMB)
-		intFileSizeToTriggerSubtitleRemoval=$(expr $intOneGigaByteInBytes \* $intMinFileSizeToTriggerSubtitleRemovalInGB)
+		intFileSizeToTriggerSubtitleRemoval=$(expr $intOneGigaByteInBytes \* $intMinFileSizeToTriggerMkvmergeInGB)
 		strDoTheloop=true
 	}
 
@@ -292,9 +364,9 @@ function fDisplayUsage() {
 	echo ""
 	echo "This script will organise a set of mkv and mp4 files into the desired location with an option to remove any subtitles from those files in the process using mkvmerge. The conditions for each of those actions can be set by the user."
 	echo ""
-	echo "There are 2 modes of operation:"
-	echo "'Command Line' mode uses the options described below. This is the default mode of operation."
-	echo "'Auto' mode uses the settings defined inside the script. Those settings located after the comments section. Use the -a option to enable Auto mode. In Auto mode the script will output log files and loop several times."
+	echo "Operating Modes:"
+	echo "   Command Line  :  This mode uses the options described below. This is the default mode of operation."
+	echo "   Auto          :  This mode uses the settings defined inside the script. Those settings located after the comments section. Use the -a option to enable Auto mode. In Auto mode the script will output log files and loop multiple times."
 	echo ""
 	echo "Usage:"
 	echo "  curate-videos [OPTIONS]... {-s [DIR or FILE (Default is current dir)]...} {-t [DIR (Default is current dir)]...}"
@@ -308,6 +380,7 @@ function fDisplayUsage() {
 	echo "   -x   Delete source Directory / file(s) -- Default is NOT delete"
 	echo "   -r   Recurse Source directory -- Find files within source the specified directory and its sub-directories -- Default is NOT recurse"
 	echo "   -m   Manually select the tracks to include in the mkvmerge output -- Overrides -e option"
+	echo "   -D   Do not create sub folders for shows"
 	echo ""
 	echo "   -d <number>           Depth - Limit recurse to the number of directories -- 1 = do not recurse"
 	echo "   -E [Path/Filename]    A file of strings used to exclude files from being processesd by mkvmerge. The files will still be moved."
@@ -328,6 +401,7 @@ function fDisplayUsage() {
 	echo ""
 	exit 2
 }
+
 
 function fCheckPaths()  {
 	strCurrentIFS=$IFS
@@ -373,22 +447,18 @@ function fCheckPaths()  {
 	# Display the list of bad paths.
 	if [ ${#arrBadPaths[@]} -gt 0 ]
 	then
-		strLogFileNameAndPath="$HOME/curate-videos-ERRORS.log"
 		touch "$strLogFileNameAndPath"
 		if [ $? -eq 0 ]
 		then
 			exec > >(tee -a "$strLogFileNameAndPath") 2>&1
 		fi
 		echo ""
-		echo "ERROR-01: Invalid Paths defined in the user settings."
-		echo ""
+		echo "ERROR-01 @ $(date)"
+		echo "Invalid Paths defined in the user settings."
 		for strBadPath in ${arrBadPaths[@]}
 		do
 			echo "$strBadPath"
 		done
-		echo ""
-		echo "Above errors also logged to $strLogFileNameAndPath"
-		echo ""
 		exit
 	fi
 
@@ -643,7 +713,7 @@ function fProcessFilesInDir() {
 	echo "==============================================================================="
 	echo ""
 	echo "Source directory  : $strSourcePath"
-	echo "Filtering for     : $strFilterMatchType   [.mkv and .mp4 files only]"
+	echo "Filtering for     : $strFilterMatchType   [.mkv .avi .mp4 files only]"
 	echo "Skip Sample Files : $strSkipSampleFiles"
 	echo "Overwrite Targets : $strOverWriteTarget"
 	echo "Delete Sources    : $strDeleteSource"
@@ -669,13 +739,13 @@ function fProcessFilesInDir() {
 	then
 		case ${strFilterMatchType,,} in
 			shows )
-				arrFilesToProcess=($(find "$strSourcePath" -type f -iname '*.mkv' -o -iname '*.mp4' | grep -P '([Ss]?)(\d{1,2})([xXeE\-])(\d{1,2})'))
+				arrFilesToProcess=($(find "$strSourcePath" -type f -iname '*.mkv' -o -iname '*.mp4' -o -iname '*.avi' | grep -P '([Ss]?)(\d{1,2})([xXeE\-])(\d{1,2})'))
 				;;
 			films )
-				arrFilesToProcess=($(find "$strSourcePath" -type f -iname '*.mkv' -o -iname '*.mp4' | grep -v -P '([Ss]?)(\d{1,2})([xXeE\-])(\d{1,2})'))
+				arrFilesToProcess=($(find "$strSourcePath" -type f -iname '*.mkv' -o -iname '*.mp4' -o -iname '*.avi' | grep -v -P '([Ss]?)(\d{1,2})([xXeE\-])(\d{1,2})'))
 				;;
 			all )
-				arrFilesToProcess=($(find "$strSourcePath" -type f -iname '*.mkv' -o -iname '*.mp4'))
+				arrFilesToProcess=($(find "$strSourcePath" -type f -iname '*.mkv' -o -iname '*.mp4' -o -iname '*.avi'))
 				;;
 		esac
 		
@@ -684,13 +754,13 @@ function fProcessFilesInDir() {
 	
 		case ${strFilterMatchType,,} in
 			shows )
-				arrFilesToProcess=($(find "$strSourcePath" -maxdepth $strRecurseLimiterMaxDepth -type f -iname '*.mkv' -o -iname '*.mp4' | grep -P '([Ss]?)(\d{1,2})([xXeE\-])(\d{1,2})'))
+				arrFilesToProcess=($(find "$strSourcePath" -maxdepth $strRecurseLimiterMaxDepth -type f -iname '*.mkv' -o -iname '*.mp4' -o -iname '*.avi' | grep -P '([Ss]?)(\d{1,2})([xXeE\-])(\d{1,2})'))
 				;;
 			films )
-				arrFilesToProcess=($(find "$strSourcePath" -maxdepth $strRecurseLimiterMaxDepth -type f -iname '*.mkv' -o -iname '*.mp4' | grep -v -P '([Ss]?)(\d{1,2})([xXeE\-])(\d{1,2})'))
+				arrFilesToProcess=($(find "$strSourcePath" -maxdepth $strRecurseLimiterMaxDepth -type f -iname '*.mkv' -o -iname '*.mp4' -o -iname '*.avi' | grep -v -P '([Ss]?)(\d{1,2})([xXeE\-])(\d{1,2})'))
 				;;
 			all )
-				arrFilesToProcess=($(find "$strSourcePath" -maxdepth $strRecurseLimiterMaxDepth -type f -iname '*.mkv' -o -iname '*.mp4'))
+				arrFilesToProcess=($(find "$strSourcePath" -maxdepth $strRecurseLimiterMaxDepth -type f -iname '*.mkv' -o -iname '*.mp4' -o -iname '*.avi'))
 				;;
 		esac
 
@@ -721,14 +791,58 @@ function fProcessFilesInDir() {
 
 			# Reset strSourceFileRenamed to default value.
 			strSourceFileRenamed=false
-			
+
 			# Split the file name from from the dir path in strSourceFile
 			strSourceFileName=$(basename "$strSourceFile")
-			
-			# Setup the destination paths and include the file name.
+
+			# Setup the destination paths and include the sub file name.
 			IFS=''
 			strTargetDirAndFileName="$strTargetDir/$strSourceFileName"
-			
+
+			declare -i intStringPosition
+
+			# If processing a show then setup a subfolder for the show using the show name and add the subfolder to strSourceFileName
+			if [ $strUseShowNameForShowSubdirectory = true ]
+			then
+				if [ $strFilterMatchType = "shows" ]
+				then
+
+					### Get the show name to use as the directory name.
+
+					# Get the season/episode string to use in the search coming next
+					strStringToLocate=$(echo $strSourceFileName | grep -o -P '([Ss]?)(\d{1,2})([xXeE\-])(\d{1,2})')
+
+					# Get just the filename in upper case by finding the first instance of the search string
+					strShowNameOnly=${strSourceFileName%%$strStringToLocate*}
+
+					# Get the length of the show name minus 1 to trim the trailing space or dot or whatever
+					let "intStringPosition=${#strShowNameOnly} - 1"
+
+					# Get just the show name only using the length of the show name
+					strShowNameOnlyTrimmed=${strShowNameOnly:0:$intStringPosition}
+
+					# Replace all . chars with a space char
+					strShowNameOnlyNoDots=${strShowNameOnlyTrimmed//./ }
+
+					# Set Caps for initials
+					strShowName=$(echo $strShowNameOnlyNoDots | sed -e "s/\b./\u\0/g")
+
+					# Set the whole path and dir name for the show
+					strTargetDirAndShowName="$strTargetDir/$strShowName"
+
+					# Create show directory if it does not exist.
+					if [ ! -d "$strTargetDirAndShowName" ]
+					then
+						echo "Creating Show Sub-Directory . . . $strTargetDirAndShowName"
+						mkdir "$strTargetDirAndShowName"
+					fi
+
+					# Setup the destination paths and include the sub file name.
+					IFS=''
+					strTargetDirAndFileName="$strTargetDirAndShowName/$strSourceFileName"
+				fi
+			fi
+
 			# Get full directory path of source file without filename.
 			IFS=''
 			strSourceFullDir="$(dirname "$strSourceFile")"
@@ -785,7 +899,16 @@ function fProcessFilesInDir() {
 			if [ $intFileSizeInBytes -gt $intFileSizeToIgnore ] && [ $intFileSizeInBytes -le $intFileSizeToTriggerSubtitleRemoval ]
 			then
 				# Move the file into the required directory
-				echo "Skipping mvkmerge: File is smaller than the Trigger size $intMinFileSizeToTriggerSubtitleRemovalInGB GB"
+				echo "Skipping mvkmerge: File is smaller than the Trigger size $intMinFileSizeToTriggerMkvmergeInGB GB"
+				strActionFileMoveOnly=true
+			fi
+			
+			### Check if the file is an AVI 
+			strSourceFileLower=${strSourceFile,,}
+			if [ ${strSourceFileLower##*.} = 'avi' ]
+			then
+				# Don't parse AVI files through mkvmerge AVI files
+				echo "Skipping mvkmerge: File is an AVI file so does not need processing by mkvmerge"
 				strActionFileMoveOnly=true
 			fi
 
@@ -819,7 +942,7 @@ function fProcessFilesInDir() {
 				# Set the location and file name for mvkmerge to output to
 				strMKVMergeOutputDirAndFileName=($strTargetDirMKVMergeTemp/$strSourceFileName)
 			
-				# Use mkmerge to remove the subtitles. This will create a copy of the video file which will be moved after it has been processed.
+				# Use mkvmerge to remove the subtitles. This will create a copy of the video file which will be moved after it has been processed.
 				echo "MKVMerge   : Removing Subtitles . . ."
 				if [ $strWhatIfMode = false ]
 				then
@@ -997,7 +1120,8 @@ function fProcessFilesInDir() {
 							echo "ERROR-08: rm -f $strFileToDelete"
 							exit 1
 						fi
-					else
+					elif [ $strWhatIfMode = true ] && [ -e "$strFileToDelete" ]
+					then
 						echo "*** What If: rm -f $strFileToDelete"
 					fi
 				done
@@ -1037,11 +1161,53 @@ function fProcessOneFile() {
 	strSourceFileName=$(basename $strSourceFile)
 
 	# Setup the destination paths and include the file name.
-	strTargetFileNameAndPath=($strTargetDir/$strSourceFileName)
+	strTargetDirAndFileName=($strTargetDir/$strSourceFileName)
 
-	if [ $strOverWriteTarget = true ] || [ ! -e "$strTargetFileNameAndPath" ]
+	# If processing a show then setup a subfolder for the show using the show name and add the subfolder to strSourceFileName
+	if [ $strUseShowNameForShowSubdirectory = true ]
 	then
-		echo "ERROR-19: Target file already exists - $strTargetFileNameAndPath"
+		if [ $strFilterMatchType = "shows" ]
+		then
+
+			### Get the show name to use as the directory name.
+
+			# Get the season/episode string to use in the search coming next
+			strStringToLocate=$(echo $strSourceFileName | grep -o -P '([Ss]?)(\d{1,2})([xXeE\-])(\d{1,2})')
+
+			# Get just the filename in upper case by finding the first instance of the search string
+			strShowNameOnly=${strSourceFileName%%$strStringToLocate*}
+
+			# Get the length of the show name minus 1 to trim the trailing space or dot or whatever
+			let "intStringPosition=${#strShowNameOnly} - 1"
+
+			# Get just the show name only using the length of the show name
+			strShowNameOnlyTrimmed=${strShowNameOnly:0:$intStringPosition}
+
+			# Replace all . chars with a space char
+			strShowNameOnlyNoDots=${strShowNameOnlyTrimmed//./ }
+
+			# Set Caps for initials
+			strShowName=$(echo $strShowNameOnlyNoDots | sed -e "s/\b./\u\0/g")
+
+			# Set the whole path and dir name for the show
+			strTargetDirAndShowName="$strTargetDir/$strShowName"
+
+			# Create show directory if it does not exist.
+			if [ ! -d "$strTargetDirAndShowName" ]
+			then
+				echo "Creating Show Sub-Directory . . . $strTargetDirAndShowName"
+				mkdir "$strTargetDirAndShowName"
+			fi
+
+			# Setup the destination paths and include the sub file name.
+			IFS=''
+			strTargetDirAndFileName="$strTargetDirAndShowName/$strSourceFileName"
+		fi
+	fi
+
+	if [ $strOverWriteTarget = true ] || [ ! -e "$strTargetDirAndFileName" ]
+	then
+		echo "ERROR-19: Target file already exists - $strTargetDirAndFileName"
 		echo "          Move or rename that file or use the -o switch to overwrite it automatically"
 		exit 1
 	fi
@@ -1128,23 +1294,23 @@ function fProcessOneFile() {
 
 	# Move the file into the required directory.
 	echo "Moving From : $strMKVMergeOutputDirAndFileName"
-	echo "         To : $strTargetFileNameAndPath"
-	if [ $strOverWriteTarget = true ] || [ ! -e "$strTargetFileNameAndPath" ]
+	echo "         To : $strTargetDirAndFileName"
+	if [ $strOverWriteTarget = true ] || [ ! -e "$strTargetDirAndFileName" ]
 	then
 		if [ $strWhatIfMode = false ]
 		then 
-			mv -f "$strMKVMergeOutputDirAndFileName" "$strTargetFileNameAndPath"
+			mv -f "$strMKVMergeOutputDirAndFileName" "$strTargetDirAndFileName"
 			if [ $? -gt 0 ]
 			then
-				echo "ERROR-11: mv -f $strMKVMergeOutputDirAndFileName $strTargetFileNameAndPath"
+				echo "ERROR-11: mv -f $strMKVMergeOutputDirAndFileName $strTargetDirAndFileName"
 				exit 1
 			fi
 		else
-			echo "*** What If: mv -f $strMKVMergeOutputDirAndFileName $strTargetFileNameAndPath"
+			echo "*** What If: mv -f $strMKVMergeOutputDirAndFileName $strTargetDirAndFileName"
 		fi
-	elif [ $strOverWriteTarget = false ] || [ -e "$strTargetFileNameAndPath" ]
+	elif [ $strOverWriteTarget = false ] || [ -e "$strTargetDirAndFileName" ]
 	then
-		echo "ERROR-06: Target file already exists - $strTargetFileNameAndPath"
+		echo "ERROR-06: Target file already exists - $strTargetDirAndFileName"
 		echo "          Move or rename that file or use the -o switch to overwrite it automatically"
 		echo "          mkvmerge has already create copy with SRT streams removed. You  can  move this by hand."
 		echo "          $strMKVMergeOutputDirAndFileName"
@@ -1182,7 +1348,7 @@ echo ""
 ApplyCmdLineDefaultSettings
 
 # Process the command line options
-strValidCmdLineOptions=":hwaeEmSoxrd:s:t:f:T:z"
+strValidCmdLineOptions=":hwaeEmSoxrDd:s:t:f:T:z"
 while getopts "$strValidCmdLineOptions" arrReceivedCmdLineOptions
 do
 	case ${arrReceivedCmdLineOptions} in
@@ -1236,6 +1402,10 @@ do
 			echo "ABORTED: User Said No!"
 			exit 1
 		fi
+		;;
+	D )
+		# Do not use show named su directories.
+		strUseShowNameForShowSubdirectory=false
 		;;
 	d )
 		# Define a max depth to recurse into.
@@ -1365,7 +1535,7 @@ then
 	# Starting logging all output to file
 	exec > >(tee -a "$strLogFileNameAndPath") 2>&1
 
-	# Initials the Loop Counter
+	# Initialise the Loop Counter
 	intLoopCounter=1
 
 	# Start the Looper
